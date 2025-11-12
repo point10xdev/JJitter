@@ -6,13 +6,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.event.ActionListener;
 
 /**
  * Main application class.
  * Creates the JFrame and organizes all the UI components.
  *
  * (Updated with UI/UX improvements, full parameter names, and layout adjustments for graphs)
+ * (Modernized with Nimbus L&F and cleaner control panel layout)
  */
 public class JJitter extends JFrame {
 
@@ -27,25 +27,28 @@ public class JJitter extends JFrame {
     private JPanel cardPanel;
 
     // --- Analog Input Components ---
-    private JTextField textAnalogInput;
+    // Removed textAnalogInput, as spec is built dynamically
     private JComboBox<String> comboAnalogWaveform;
     private JTextField paramF, paramA, paramPhi, paramFs, paramD, paramK;
-    // private JButton applyAnalogButton; // Removed for simplicity
 
     private JComboBox<String> comboModulation;
     private JComboBox<String> comboEncoding;
-    private JComboBox<String> comboScrambling; // Added for intuitive UI
-    private JLabel labelScrambling; // Added for intuitive UI
+    private JComboBox<String> comboScrambling;
+    private JLabel labelScrambling;
 
     private JTextArea textOutput;
     private SimpleSignalRenderer signalRenderer;
     private SimpleSignalRenderer scrambledSignalRenderer;
     private JButton btnGenerate;
 
+    // --- UI Constants ---
+    private static final Insets PANEL_PADDING = new Insets(10, 10, 10, 10);
+    private static final Insets COMPONENT_INSETS = new Insets(5, 5, 5, 5);
+
     public JJitter() {
         this.processor = new SignalProcessor();
 
-        setTitle("Digital Signal Generator");
+        setTitle("JJitter - Digital Signal Generator");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -63,81 +66,32 @@ public class JJitter extends JFrame {
     }
 
     private JPanel createControlPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        // --- CHANGE: Reduced bottom padding from 5 to 2 ---
-        panel.setBorder(new EmptyBorder(10, 10, 2, 10));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(PANEL_PADDING));
 
-        // --- Input Type ---
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        panel.add(createInputTypePanel(), gbc);
+        // --- Input Panel (Top Left) ---
+        JPanel inputTypePanel = createInputTypePanel();
 
-        // --- Encoding ---
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.EAST;
-        gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("Line Encoding:"), gbc);
+        // --- Configuration Panel (Top Right) ---
+        JPanel configPanel = createConfigurationPanel();
 
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        comboEncoding = new JComboBox<>(new String[]{"NRZ-L", "NRZ-I", "Manchester", "Differential Manchester", "AMI"});
-        panel.add(comboEncoding, gbc);
-
-        // --- Scrambling (Context-Aware) ---
-        labelScrambling = new JLabel("Scrambling (AMI only):");
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.EAST;
-        gbc.fill = GridBagConstraints.NONE;
-        panel.add(labelScrambling, gbc);
-
-        comboScrambling = new JComboBox<>(new String[]{"NONE", "B8ZS", "HDB3"});
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(comboScrambling, gbc);
-
-        // Add listener to show/hide scrambling
-        comboEncoding.addActionListener(e -> {
-            boolean amiSelected = "AMI".equals(comboEncoding.getSelectedItem());
-            labelScrambling.setVisible(amiSelected);
-            comboScrambling.setVisible(amiSelected);
-            if (!amiSelected) {
-                comboScrambling.setSelectedItem("NONE");
-            }
-        });
-
-        // Initially hide scrambling options
-        labelScrambling.setVisible(false);
-        comboScrambling.setVisible(false);
-
-
-        // --- Generate Button ---
-        gbc.gridx = 0;
-        gbc.gridy = 3; // Updated gridy
-        gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.CENTER;
+        // --- Generate Button (Bottom Center) ---
         btnGenerate = new JButton("Generate Signal");
         btnGenerate.setFont(btnGenerate.getFont().deriveFont(Font.BOLD, 14f));
         btnGenerate.addActionListener(e -> generateSignal());
-        panel.add(btnGenerate, gbc);
+        JPanel generatePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        generatePanel.add(btnGenerate);
+
+        panel.add(inputTypePanel, BorderLayout.CENTER);
+        panel.add(configPanel, BorderLayout.EAST);
+        panel.add(generatePanel, BorderLayout.SOUTH);
 
         return panel;
     }
 
     private JPanel createInputTypePanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new TitledBorder("Input Source"));
+        panel.setBorder(new TitledBorder("1. Input Source"));
 
         // --- Radio Button Panel ---
         radioDigital = new JRadioButton("Digital Input", true);
@@ -169,9 +123,9 @@ public class JJitter extends JFrame {
 
     private JPanel createDigitalCard() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        panel.setBorder(new EmptyBorder(PANEL_PADDING));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = COMPONENT_INSETS;
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -190,78 +144,136 @@ public class JJitter extends JFrame {
 
     private JPanel createAnalogCard() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        panel.setBorder(new EmptyBorder(PANEL_PADDING));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = COMPONENT_INSETS;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        int gridY = 0;
+
         // --- Modulation ---
         gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.1;
+        gbc.gridy = gridY;
         gbc.fill = GridBagConstraints.NONE;
         panel.add(new JLabel("Modulation:"), gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.weightx = 0.9;
+        gbc.gridy = gridY++;
+        gbc.gridwidth = 2; // Span 2 cols
         gbc.fill = GridBagConstraints.HORIZONTAL;
         comboModulation = new JComboBox<>(new String[]{"PCM", "DM"});
         panel.add(comboModulation, gbc);
 
         // --- Analog Signal Definition ---
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = gridY;
+        gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE;
         panel.add(new JLabel("Waveform:"), gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 1;
+        gbc.gridy = gridY++;
+        gbc.gridwidth = 2; // Span 2 cols
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        comboAnalogWaveform = new JComboBox<>(new String[] { "Sine", "Cosine", "Exponential", "Square", "Sawtooth" });
+        comboAnalogWaveform = new JComboBox<>(new String[]{"Sine", "Cosine", "Exponential", "Square", "Sawtooth"});
         panel.add(comboAnalogWaveform, gbc);
 
-        // --- Analog Parameters Panel ---
-        // Use a smaller gap to accommodate longer labels
-        JPanel paramsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        paramsPanel.add(new JLabel("Frequency (f):"));
-        paramF = new JTextField("5", 4);
-        paramsPanel.add(paramF);
-        paramsPanel.add(new JLabel("Amplitude (a):"));
-        paramA = new JTextField("1", 4);
-        paramsPanel.add(paramA);
-        paramsPanel.add(new JLabel("Phase (phi):"));
-        paramPhi = new JTextField("0", 4);
-        paramsPanel.add(paramPhi);
-        paramsPanel.add(new JLabel("Sample Rate (fs):"));
-        paramFs = new JTextField("100", 4);
-        paramsPanel.add(paramFs);
-        paramsPanel.add(new JLabel("Duration (d):"));
-        paramD = new JTextField("1", 4);
-        paramsPanel.add(paramD);
-        paramsPanel.add(new JLabel("Rate (k):"));
-        paramK = new JTextField("1", 4);
-        paramsPanel.add(paramK);
+        // --- Analog Parameters Panel (Now in a neat grid) ---
+        gbc.gridwidth = 1; // Reset gridwidth
 
+        // Column 1
+        panel.add(new JLabel("Frequency (f):"), gbc(0, gridY));
+        paramF = new JTextField("5", 6);
+        panel.add(paramF, gbc(1, gridY++));
+
+        panel.add(new JLabel("Amplitude (a):"), gbc(0, gridY));
+        paramA = new JTextField("1", 6);
+        panel.add(paramA, gbc(1, gridY++));
+
+        panel.add(new JLabel("Phase (phi):"), gbc(0, gridY));
+        paramPhi = new JTextField("0", 6);
+        panel.add(paramPhi, gbc(1, gridY++));
+
+        // Column 2
+        gridY -= 3; // Reset Y to align
+        panel.add(new JLabel("Sample Rate (fs):"), gbc(2, gridY));
+        paramFs = new JTextField("100", 6);
+        panel.add(paramFs, gbc(3, gridY++));
+
+        panel.add(new JLabel("Duration (d):"), gbc(2, gridY));
+        paramD = new JTextField("1", 6);
+        panel.add(paramD, gbc(3, gridY++));
+
+        panel.add(new JLabel("Rate (k):"), gbc(2, gridY));
+        paramK = new JTextField("1", 6);
+        panel.add(paramK, gbc(3, gridY++));
+
+        return panel;
+    }
+
+    // Helper for analog card GBC
+    private GridBagConstraints gbc(int x, int y) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = COMPONENT_INSETS;
+        gbc.gridx = x;
+        gbc.gridy = y;
+        gbc.anchor = (x % 2 == 0) ? GridBagConstraints.EAST : GridBagConstraints.WEST;
+        gbc.fill = (x % 2 == 0) ? GridBagConstraints.NONE : GridBagConstraints.HORIZONTAL;
+        return gbc;
+    }
+
+
+    private JPanel createConfigurationPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(new TitledBorder("2. Signal Configuration"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // --- Encoding ---
         gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Line Encoding:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(paramsPanel, gbc);
+        comboEncoding = new JComboBox<>(new String[]{"NRZ-L", "NRZ-I", "Manchester", "Differential Manchester", "AMI"});
+        panel.add(comboEncoding, gbc);
+
+        // --- Scrambling (Context-Aware) ---
+        labelScrambling = new JLabel("Scrambling (AMI only):");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(labelScrambling, gbc);
+
+        comboScrambling = new JComboBox<>(new String[]{"NONE", "B8ZS", "HDB3"});
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(comboScrambling, gbc);
+
+        // Add listener to show/hide scrambling
+        comboEncoding.addActionListener(e -> {
+            boolean amiSelected = "AMI".equals(comboEncoding.getSelectedItem());
+            labelScrambling.setVisible(amiSelected);
+            comboScrambling.setVisible(amiSelected);
+            if (!amiSelected) {
+                comboScrambling.setSelectedItem("NONE");
+            }
+        });
+
+        // Initially hide scrambling options
+        labelScrambling.setVisible(false);
+        comboScrambling.setVisible(false);
 
         return panel;
     }
 
     /**
-     * This method is no longer needed as CardLayout handles visibility.
-     */
-    // private void toggleInputControls() { ... } // DELETED
-
-    /**
      * Builds the analog spec string directly from the UI fields.
-     * Replaces the old applyAnalogSpecToInput() and textAnalogInput field.
-     * @return The formatted specification string.
      */
     private String buildAnalogSpecString() {
         String type = (String) comboAnalogWaveform.getSelectedItem();
@@ -290,8 +302,7 @@ public class JJitter extends JFrame {
 
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        // --- CHANGE: Reduced top padding from 5 to 2 ---
-        panel.setBorder(new EmptyBorder(2, 10, 10, 10));
+        panel.setBorder(new EmptyBorder(PANEL_PADDING));
 
         // --- Text Output ---
         textOutput = new JTextArea(8, 60);
@@ -311,11 +322,7 @@ public class JJitter extends JFrame {
         renderSplit.setResizeWeight(0.5);
 
         JSplitPane mainOutputSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollPane, renderSplit);
-
-        // --- CHANGE: Reduced resizeWeight from 0.15 to 0.10 ---
-        // This gives even less space to the top (text area) and more to the bottom (graphs).
-        // The user can manually drag the divider up if they need to read the text.
-        mainOutputSplit.setResizeWeight(0.10);
+        mainOutputSplit.setResizeWeight(0.15); // Give a bit more space to text by default
 
         panel.add(mainOutputSplit, BorderLayout.CENTER);
         return panel;
@@ -323,11 +330,7 @@ public class JJitter extends JFrame {
 
     private void generateSignal() {
         String encoding = (String) comboEncoding.getSelectedItem();
-        // Get scrambling from the combo box, not a popup
         String scrambling = (String) comboScrambling.getSelectedItem();
-
-        // The disruptive JOptionPane has been removed.
-        // if ("AMI".equals(encoding)) { ... } // DELETED
 
         SignalProcessor.SignalResult result;
 
@@ -335,7 +338,7 @@ public class JJitter extends JFrame {
             if (radioDigital.isSelected()) {
                 String data = textDigitalInput.getText().replaceAll("[^01]", ""); // Sanitize input
                 textDigitalInput.setText(data);
-                if(data.isEmpty()) {
+                if (data.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Please enter a valid binary string.", "Input Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -343,7 +346,6 @@ public class JJitter extends JFrame {
             } else {
                 // Analog Input
                 String modulation = (String) comboModulation.getSelectedItem();
-                // Build spec string directly from fields, don't read from text field
                 String signalSpec = buildAnalogSpecString();
                 if (signalSpec.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Please enter valid analog signal parameters.", "Input Error", JOptionPane.ERROR_MESSAGE);
@@ -403,7 +405,7 @@ public class JJitter extends JFrame {
                 + "4. <b>View Results:</b><br>"
                 + "&nbsp;&nbsp;&bull; See text results in the top panel.<br>"
                 + "&nbsp;&nbsp;&bull; See the final waveform in the 'Encoded Signal' graph.<br>"
-                + "&nbsp;&nbsp;&bull; If scrambling was used, see its effect in the 'Scrambled Signal' graph.<br><br>"
+                + "&nbsp;&m&nbsp;&bull; If scrambling was used, see its effect in the 'Scrambled Signal' graph.<br><br>"
                 + "<b>Tip:</b> All panels are resizable! You can drag the dividers to get more space.</html>";
 
         JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
@@ -416,9 +418,20 @@ public class JJitter extends JFrame {
     public static void main(String[] args) {
         // Set Look and Feel for a more modern appearance
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            // Use Nimbus for a modern look
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
         } catch (Exception e) {
-            System.err.println("Couldn't set system Look and Feel.");
+            // If Nimbus is not available, fall back to system L&F
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e2) {
+                System.err.println("Couldn't set Look and Feel.");
+            }
         }
 
         // Run the GUI on the Event Dispatch Thread

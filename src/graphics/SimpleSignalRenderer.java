@@ -7,11 +7,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.FontMetrics;
+import java.awt.BasicStroke;
 import java.util.List;
 import java.util.Collections;
 
 /**
  * A JPanel component responsible for drawing the digital signal waveform.
+ * (Modernized with updated colors and stroke)
  */
 public class SimpleSignalRenderer extends JPanel {
 
@@ -20,12 +22,21 @@ public class SimpleSignalRenderer extends JPanel {
 
     private static final int PADDING = 40;
     private static final int VOLTAGE_AMP = 50; // Pixels for +1V
-    private static final Color COLOR_SIGNAL = new Color(0, 119, 190); // Blue
-    private static final Color COLOR_GRID = new Color(220, 220, 220);
-    private static final Color COLOR_TEXT = Color.BLACK;
+
+    // --- Modernized Color Palette ---
+    private static final Color COLOR_BACKGROUND = new Color(248, 248, 248);
+    private static final Color COLOR_SIGNAL = new Color(0, 119, 190); // (Original Blue)
+    private static final Color COLOR_GRID = new Color(200, 200, 200); // Darker grid
+    private static final Color COLOR_AXIS = new Color(150, 150, 150); // Mid-gray axis
+    private static final Color COLOR_TEXT = new Color(50, 50, 50);   // Dark gray text
+    private static final BasicStroke STROKE_SIGNAL = new BasicStroke(2.5f);
+    private static final BasicStroke STROKE_GRID = new BasicStroke(1.0f);
+    private static final BasicStroke STROKE_DASHED = new BasicStroke(1.0f, BasicStroke.CAP_BUTT,
+            BasicStroke.JOIN_MITER, 10.0f, new float[]{2.0f}, 0.0f);
+
 
     public SimpleSignalRenderer() {
-        setBackground(Color.WHITE);
+        setBackground(COLOR_BACKGROUND);
     }
 
     /**
@@ -61,9 +72,12 @@ public class SimpleSignalRenderer extends JPanel {
         double bitWidth = (w - 2.0 * PADDING) / maxTime;
 
         // --- Draw Axes and Labels ---
-        g2d.setColor(COLOR_GRID);
+        g2d.setColor(COLOR_AXIS);
+        g2d.setStroke(STROKE_GRID);
         // 0V line
         g2d.drawLine(PADDING, y_zero, w - PADDING, y_zero);
+
+        g2d.setColor(COLOR_GRID);
         // +1V line
         g2d.drawLine(PADDING, y_plus_one, w - PADDING, y_plus_one);
         // -1V line
@@ -76,7 +90,7 @@ public class SimpleSignalRenderer extends JPanel {
 
         // --- Draw Signal ---
         g2d.setColor(COLOR_SIGNAL);
-        g2d.setStroke(new java.awt.BasicStroke(2));
+        g2d.setStroke(STROKE_SIGNAL); // Use thicker stroke
 
         double lastLevel = 0; // Assume starts at 0
         int lastX = PADDING;
@@ -97,7 +111,7 @@ public class SimpleSignalRenderer extends JPanel {
 
             // Vertical line for transition (if level changed)
             if (frame.level != lastLevel) {
-                g2d.drawLine(x0, (int)(y_zero - lastLevel * VOLTAGE_AMP), x0, y);
+                g2d.drawLine(x0, (int) (y_zero - lastLevel * VOLTAGE_AMP), x0, y);
             }
 
             // Horizontal line for signal level
@@ -109,13 +123,12 @@ public class SimpleSignalRenderer extends JPanel {
 
         // --- Draw Bit Grid Lines and Data Labels ---
         g2d.setColor(COLOR_GRID);
-        g2d.setStroke(new java.awt.BasicStroke(1, java.awt.BasicStroke.CAP_BUTT,
-                java.awt.BasicStroke.JOIN_MITER, 10.0f, new float[]{2.0f}, 0.0f));
+        g2d.setStroke(STROKE_DASHED);
 
         FontMetrics fm = g2d.getFontMetrics();
         g2d.setColor(COLOR_TEXT);
 
-        for (int i = 0; i <= (int)maxTime; i++) {
+        for (int i = 0; i <= (int) maxTime; i++) {
             int x = (int) (PADDING + i * bitWidth);
             g2d.setColor(COLOR_GRID);
             g2d.drawLine(x, PADDING, x, h - PADDING);

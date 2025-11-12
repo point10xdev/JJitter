@@ -7,7 +7,7 @@ package modulation;
 public class PCM {
 
     /**
-     * Generates a sample analog signal (a sine wave).
+     * Uses a sample analog signal .
      * @param length Number of samples to generate.
      * @return Array of doubles representing the signal.
      */
