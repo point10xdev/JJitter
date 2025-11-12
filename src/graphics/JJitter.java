@@ -19,6 +19,13 @@ public class JJitter extends JFrame {
     // --- UI Components ---
     private JRadioButton radioDigital, radioAnalog;
     private JTextField textDigitalInput;
+
+    // New components for Analog Input
+    private JTextField textAnalogInput;
+    private JComboBox<String> comboAnalogWaveform;
+    private JTextField paramF, paramA, paramPhi, paramFs, paramD, paramK;
+    private JButton applyAnalogButton;
+
     private JComboBox<String> comboModulation;
     private JComboBox<String> comboEncoding;
     private JTextArea textOutput;
@@ -38,7 +45,7 @@ public class JJitter extends JFrame {
         JPanel outputPanel = createOutputPanel();
 
         JSplitPane mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, controlPanel, outputPanel);
-        mainSplit.setResizeWeight(0.3);
+        mainSplit.setResizeWeight(0.4); // Give control panel more space
 
         add(mainSplit, BorderLayout.CENTER);
 
@@ -93,9 +100,94 @@ public class JJitter extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(2, 5, 2, 5);
         gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // --- Digital Input Row ---
         radioDigital = new JRadioButton("Digital Input:", true);
+        textDigitalInput = new JTextField("1000000001100001", 30);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.0;
+        panel.add(radioDigital, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        panel.add(textDigitalInput, gbc);
+
+        // --- Analog Input Row ---
         radioAnalog = new JRadioButton("Analog Input:");
+        comboModulation = new JComboBox<>(new String[]{"PCM", "DM"});
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.0;
+        panel.add(radioAnalog, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        panel.add(comboModulation, gbc);
+
+        // --- Analog Signal Definition ---
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0.0;
+        panel.add(new JLabel("Analog Signal:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.weightx = 1.0;
+        comboAnalogWaveform = new JComboBox<>(new String[] { "Sine", "Cosine", "Exponential", "Square", "Sawtooth" });
+        panel.add(comboAnalogWaveform, gbc);
+
+        // --- Analog Parameters Row 1 ---
+        JPanel paramsRow1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        paramsRow1.add(new JLabel("f:"));
+        paramF = new JTextField("5", 4);
+        paramsRow1.add(paramF);
+        paramsRow1.add(new JLabel("a:"));
+        paramA = new JTextField("1", 4);
+        paramsRow1.add(paramA);
+        paramsRow1.add(new JLabel("phi:"));
+        paramPhi = new JTextField("0", 4);
+        paramsRow1.add(paramPhi);
+
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        gbc.weightx = 1.0;
+        panel.add(paramsRow1, gbc);
+
+        // --- Analog Parameters Row 2 ---
+        JPanel paramsRow2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        paramsRow2.add(new JLabel("fs:"));
+        paramFs = new JTextField("100", 4);
+        paramsRow2.add(paramFs);
+        paramsRow2.add(new JLabel("d:"));
+        paramD = new JTextField("1", 4);
+        paramsRow2.add(paramD);
+        paramsRow2.add(new JLabel("k:"));
+        paramK = new JTextField("1", 4);
+        paramsRow2.add(paramK);
+        applyAnalogButton = new JButton("Apply");
+        applyAnalogButton.addActionListener(e -> applyAnalogSpecToInput());
+        paramsRow2.add(applyAnalogButton);
+
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        gbc.weightx = 1.0;
+        panel.add(paramsRow2, gbc);
+
+        // --- Analog Input Text Field ---
+        textAnalogInput = new JTextField("sin(f=5,a=1,fs=100,d=1)", 30);
+        gbc.gridx = 1;
+        gbc.gridy = 5;
+        gbc.weightx = 1.0;
+        panel.add(textAnalogInput, gbc);
+
+
+        // --- Radio Button Group ---
         ButtonGroup bg = new ButtonGroup();
         bg.add(radioDigital);
         bg.add(radioAnalog);
@@ -104,35 +196,50 @@ public class JJitter extends JFrame {
         radioDigital.addActionListener(listener);
         radioAnalog.addActionListener(listener);
 
-        textDigitalInput = new JTextField("1000000001100001", 30);
-        comboModulation = new JComboBox<>(new String[]{"PCM", "DM"});
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(radioDigital, gbc);
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        panel.add(textDigitalInput, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.weightx = 0.0;
-        panel.add(radioAnalog, gbc);
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        panel.add(comboModulation, gbc);
-
         return panel;
     }
 
     private void toggleInputControls() {
         boolean isDigital = radioDigital.isSelected();
+
         textDigitalInput.setEnabled(isDigital);
+
         comboModulation.setEnabled(!isDigital);
+        textAnalogInput.setEnabled(!isDigital);
+        comboAnalogWaveform.setEnabled(!isDigital);
+        paramF.setEnabled(!isDigital);
+        paramA.setEnabled(!isDigital);
+        paramPhi.setEnabled(!isDigital);
+        paramFs.setEnabled(!isDigital);
+        paramD.setEnabled(!isDigital);
+        paramK.setEnabled(!isDigital);
+        applyAnalogButton.setEnabled(!isDigital);
     }
+
+    private void applyAnalogSpecToInput() {
+        String type = (String) comboAnalogWaveform.getSelectedItem();
+        if (type == null) type = "Sine";
+        String base;
+        switch (type) {
+            case "Sine": base = "sin"; break;
+            case "Cosine": base = "cos"; break;
+            case "Exponential": base = "exp"; break;
+            case "Square": base = "square"; break;
+            case "Sawtooth": base = "saw"; break;
+            default: base = "sin"; break;
+        }
+        String spec = String.format(java.util.Locale.ROOT,
+                "%s(f=%s,a=%s,phi=%s,fs=%s,d=%s,k=%s)",
+                base,
+                paramF.getText().trim(),
+                paramA.getText().trim(),
+                paramPhi.getText().trim(),
+                paramFs.getText().trim(),
+                paramD.getText().trim(),
+                paramK.getText().trim());
+        textAnalogInput.setText(spec);
+    }
+
 
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
@@ -185,21 +292,33 @@ public class JJitter extends JFrame {
 
         SignalProcessor.SignalResult result;
 
-        if (radioDigital.isSelected()) {
-            String data = textDigitalInput.getText().replaceAll("[^01]", ""); // Sanitize input
-            textDigitalInput.setText(data);
-            if(data.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please enter a valid binary string.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                return;
+        try {
+            if (radioDigital.isSelected()) {
+                String data = textDigitalInput.getText().replaceAll("[^01]", ""); // Sanitize input
+                textDigitalInput.setText(data);
+                if(data.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Please enter a valid binary string.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                result = processor.processDigitalInput(data, encoding, scrambling);
+            } else {
+                // Analog Input
+                String modulation = (String) comboModulation.getSelectedItem();
+                String signalSpec = textAnalogInput.getText().trim();
+                if (signalSpec.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Please enter a valid analog signal specification.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                result = processor.processAnalogInput(signalSpec, modulation, encoding, scrambling);
             }
-            result = processor.processDigitalInput(data, encoding, scrambling);
-        } else {
-            String modulation = (String) comboModulation.getSelectedItem();
-            result = processor.processAnalogInput(modulation, encoding, scrambling);
-        }
 
-        // --- Display Results ---
-        displayResults(result);
+            // --- Display Results ---
+            displayResults(result);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error generating signal: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
     }
 
     private void displayResults(SignalProcessor.SignalResult result) {

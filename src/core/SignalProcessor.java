@@ -17,6 +17,7 @@ public class SignalProcessor {
     private PCM pcmModulator;
     private Delta deltaModulator;
     private PalindromeFinder palindromeFinder;
+    // No SignalSynth instance needed as its methods are static
 
     public SignalProcessor() {
         this.pcmModulator = new PCM();
@@ -46,18 +47,24 @@ public class SignalProcessor {
 
     /**
      * Processes an analog input.
+     * @param signalSpec The text-based formula for the analog signal (e.g., "sin(f=5)")
      * @param modulationType "PCM" or "DM"
      * @param encodingType "NRZ-L", "AMI", etc.
      * @param scramblingType "NONE", "B8ZS", "HDB3"
      * @return A SignalResult object.
      */
-    public SignalResult processAnalogInput(String modulationType, String encodingType, String scramblingType) {
-        // 1. Generate sample analog signal
-        double[] analogSignal = pcmModulator.getSampleAnalogSignal(50); // 50 samples
+    public SignalResult processAnalogInput(String signalSpec, String modulationType, String encodingType, String scramblingType) {
+
+        // 1. Generate analog signal from spec
+        double[] analogSignal = SignalSynth.generate(signalSpec);
+        if (analogSignal == null || analogSignal.length == 0) {
+            throw new IllegalArgumentException("Could not generate analog signal from spec: " + signalSpec);
+        }
 
         // 2. Modulate
         String binaryData;
         if ("PCM".equals(modulationType)) {
+            // Get levels from PCM modulator (or pass as param)
             binaryData = pcmModulator.modulate(analogSignal, 16); // 16 levels = 4 bits/sample
         } else { // "DM"
             binaryData = deltaModulator.modulate(analogSignal, 0.5); // Step size 0.5
